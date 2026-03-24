@@ -140,6 +140,10 @@ This reproduces the qualitative trend from Figure 3 of the original paper.
 
 ## Group Members
 
-Aidan Campbell · Asael Garcia Cervantes · Yo Han Lee · Jabir Nure · Yaseer Sabir
+- Aidan Campbell
+- Asael Garcia Cervantes
+- Yo Han Lee
+- Jabir Nure
+- Yaseer Sabir
 
 CSCI 4800 — Reproduction of IEEE INFOCOM 2023
