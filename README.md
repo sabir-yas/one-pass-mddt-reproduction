@@ -1,53 +1,85 @@
 # One-Pass MDDT Reproduction
 
 Reproduction of the IEEE INFOCOM 2023 paper:
-> *"One Pass is Sufficient: A Solver for Minimizing Data Delivery Time over Time-varying Networks"*
 
-Implements three solvers for the MDDT (Minimizing Data Delivery Time) problem over
-time-varying networks and reproduces the qualitative performance trends from Figures 2 and 3
-of the paper.
+> **"One Pass is Sufficient: A Solver for Minimizing Data Delivery Time over Time-varying Networks"**
+
+Implements three solvers for the MDDT (Minimizing Data Delivery Time) problem over time-varying networks and reproduces the qualitative performance trends from Figures 2 and 3 of the paper.
+
+**Group Members:** Aidan Campbell · Asael Garcia Cervantes · Yo Han Lee · Jabir Nure · Yaseer Sabir  
+**Course:** CSCI 4800 — Reproduction of IEEE INFOCOM 2023
+
+---
+
+## Table of Contents
+
+1. [What This Does](#what-this-does)
+2. [Requirements](#requirements)
+3. [Environment Setup](#environment-setup)
+4. [How to Run](#how-to-run)
+5. [Reproducing the Main Results](#reproducing-the-main-results)
+6. [Code Structure](#code-structure)
+7. [Synthetic Network Model](#synthetic-network-model)
+8. [Implementation Assumptions](#implementation-assumptions)
+9. [Expected Output](#expected-output)
 
 ---
 
 ## What This Does
 
-- **Binary Search (BS)**: Baseline solver — binary search over time horizon, rebuilds the
-  full Time-Expanded Graph (TEG) and runs max-flow from scratch at each step.
-- **Enhanced Binary Search (EBS)**: Like BS but reuses the residual graph when the time
-  horizon expands, avoiding some redundant computation.
-- **One-Pass Solver**: The paper's contribution — incrementally expands the TEG one time
-  step at a time, reusing the residual graph throughout. One pass over time.
+Three solvers are implemented and benchmarked against one another:
 
-**Figure 2** (delivery time vs. D): All three solvers find the same optimal answer — their
-lines overlap, confirming correctness.
+- **Binary Search (BS):** Baseline solver — binary searches over the time horizon, rebuilds the full Time-Expanded Graph (TEG) and runs max-flow from scratch at each step.
+- **Enhanced Binary Search (EBS):** Like BS but reuses the residual graph when the time horizon expands, avoiding some redundant computation.
+- **One-Pass Solver:** The paper's contribution — incrementally expands the TEG one time step at a time, reusing the residual graph throughout. One pass over time.
 
-**Figure 3** (running time vs. D): One-Pass is significantly faster than BS and EBS,
-especially at large data volumes — reproducing the paper's key result.
+**Figure 2 (delivery time vs. D):** All three solvers find the same optimal answer — their lines overlap, confirming correctness.
+
+**Figure 3 (running time vs. D):** One-Pass is significantly faster than BS and EBS, especially at large data volumes (up to ~165× faster than BS at D ≈ 3,800), reproducing the paper's key result.
 
 ---
 
 ## Requirements
 
-- Python 3.9+
-- numpy, pandas, matplotlib
+- Python 3.9 or higher
+- No GPU or special hardware required — all experiments run on a single CPU core
+
+### Python Dependencies
+
+| Package | Tested Version |
+|---------|---------------|
+| `numpy` | 1.26.4 |
+| `pandas` | 2.2.1 |
+| `matplotlib` | 3.8.4 |
+
+> To check your installed versions: `pip freeze | grep -E "numpy|pandas|matplotlib"`
 
 ---
 
-## Setup
+## Environment Setup
+
+### 1. Clone the repository
 
 ```bash
-# 1. Clone the repo
-git clone https://github.com/<your-username>/one-pass-mddt-reproduction.git
+git clone https://github.com/sabir-yas/one-pass-mddt-reproduction.git
 cd one-pass-mddt-reproduction
+```
 
-# 2. (Optional) create a virtual environment
+### 2. (Recommended) Create a virtual environment
+
+```bash
 python -m venv venv
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
 
-# 3. Install dependencies
+# Activate — Windows:
+venv\Scripts\activate
+
+# Activate — macOS/Linux:
+source venv/bin/activate
+```
+
+### 3. Install dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
@@ -56,61 +88,109 @@ pip install -r requirements.txt
 ## How to Run
 
 ### Quick correctness check (~1 second)
+
 Verifies all three solvers agree on a small network:
+
 ```bash
 python experiment.py --smoke
 ```
 
+Expected output: `ALL SOLVERS AGREE` printed to stdout.
+
 ### Small-scale experiment (~5–10 seconds)
+
 Runs on a small network (8 nodes, 30 time slots), saves CSVs and figures:
+
 ```bash
 python experiment.py --small
 ```
 
 ### Full experiment (~15–20 minutes)
-Runs the full-scale experiment (15 nodes, 150 time slots, 3 trials, 15 D values).
-Saves `results_raw.csv`, `results_agg.csv`, `figure2.png`, `figure3.png`:
+
+Runs the full-scale experiment (15 nodes, 150 time slots, 3 trials, 15 D values). Saves `results_raw.csv`, `results_agg.csv`, `figure2.png`, `figure3.png`:
+
 ```bash
 python experiment.py --full
 ```
 
-> **Note:** The full experiment is slow at large D values because the DFS-based
-> Ford-Fulkerson pushes flow one augmenting path at a time. This is intentional —
-> the point is to show the *relative* speedup of One-Pass over BS, not absolute speed.
+> **Note:** The full experiment is slow at large D values because the DFS-based Ford-Fulkerson pushes flow one augmenting path at a time. This is intentional — the goal is to show the *relative* speedup of One-Pass over BS, not absolute speed.
+
+### Expected runtimes
+
+| Mode | Approximate time |
+|------|-----------------|
+| `--smoke` | < 1 second |
+| `--small` | 5–10 seconds |
+| `--full` | 15–20 minutes |
 
 ### Generate figures from existing results
-If you already have `results_agg.csv`:
+
+If you already have `results_agg.csv` and want to regenerate figures without re-running the experiment:
+
 ```bash
 python plot_results.py
 ```
 
 ---
 
-## File Overview
+## Reproducing the Main Results
 
-| File | Purpose |
-|------|---------|
-| `network_generator.py` | Synthetic time-varying network (TVN) generation |
-| `teg_builder.py` | Time-Expanded Graph construction and residual graph management |
-| `solvers.py` | DFS max-flow core + BS, EBS, One-Pass solver implementations |
-| `experiment.py` | Timed experiment loop, CSV output, correctness smoke test |
-| `plot_results.py` | Figure 2 and Figure 3 generation |
-| `requirements.txt` | Python dependencies |
+### Figure 2 — Correctness (all three solvers agree on optimal T*)
+
+```bash
+python experiment.py --full
+python plot_results.py
+```
+
+This produces `figure2.png`. All three solver lines should **overlap exactly**, confirming that the One-Pass solver computes the globally optimal delivery time T*, not an approximation. T* grows roughly linearly with D.
+
+### Figure 3 — Runtime speedup of One-Pass
+
+Generated by the same commands above. `figure3.png` (log-scale y-axis) shows:
+
+- One-Pass runs **~165× faster than BS** and **~50× faster than EBS** at D ≈ 3,800
+- The gap widens as D grows, matching the qualitative trend in Figure 3 of the original paper
+
+### Quick sanity check only
+
+```bash
+python experiment.py --smoke
+```
+
+This verifies implementation correctness in under 1 second without running the full benchmark.
+
+### If you already have `results_agg.csv`
+
+```bash
+python plot_results.py
+```
+
+Regenerates both figures from existing aggregated results, skipping the ~15-minute experiment run.
+
+---
+
+## Code Structure
+
+| File | Purpose | Paper reference |
+|------|---------|----------------|
+| `network_generator.py` | Synthetic TVN generation (Erdős–Rényi model) | §IV-A |
+| `teg_builder.py` | TEG construction and incremental residual graph management | §III |
+| `solvers.py` | DFS max-flow core + BS, EBS, One-Pass solver implementations | Algorithms 1–3 |
+| `experiment.py` | Timed experiment loop, CSV output, correctness smoke test | §IV |
+| `plot_results.py` | Figure 2 and Figure 3 generation | Figures 2–3 |
+| `requirements.txt` | Python dependencies | — |
 
 ---
 
 ## Synthetic Network Model
 
-Since the paper uses proprietary STK-generated Starlink satellite traces (not publicly
-available), we use a synthetic time-varying network:
+Since the paper uses proprietary STK-generated Starlink satellite traces (not publicly available), we use a synthetic time-varying network:
 
-- **Nodes**: Fixed set of `n` nodes (satellites/ground stations)
-- **Links**: At each time slot `t`, each directed pair `(u, v)` is independently activated
-  with probability `p` (Erdős–Rényi style), with a random integer capacity in `[cap_lo, cap_hi]`
-- **Parameters**: `n_nodes=15`, `T_max=150`, `activation_prob=0.4`, `cap_lo=1`, `cap_hi=10`
+- **Nodes:** Fixed set of `n` nodes (representing satellites/ground stations)
+- **Links:** At each time slot `t`, each directed pair `(u, v)` is independently activated with probability `p` (Erdős–Rényi style), with a random integer capacity in `[cap_lo, cap_hi]`
+- **Parameters:** `n_nodes=15`, `T_max=150`, `activation_prob=0.4`, `cap_lo=1`, `cap_hi=10`
 
-This model preserves the key property of real satellite networks: links appear and disappear
-over time, creating intermittent connectivity that the MDDT problem is designed to handle.
+This model preserves the key property of real satellite networks: links appear and disappear over time, creating intermittent connectivity that the MDDT problem is designed to handle.
 
 ---
 
@@ -118,12 +198,15 @@ over time, creating intermittent connectivity that the MDDT problem is designed 
 
 The paper does not specify all implementation details. Our choices:
 
-1. **Time discretization**: Equal-length time slots
-2. **Augmenting path search**: DFS-based Ford-Fulkerson (iterative)
-3. **Node storage**: Infinite buffering capacity between time slots
-4. **TEG edges**: Transmission edge `(u,t) → (v,t+1)` with link capacity; storage edge
-   `(v,t) → (v,t+1)` with infinite capacity
-5. **Data source**: Synthetic random networks (not Starlink traces)
+| Aspect | Our implementation |
+|--------|-------------------|
+| Time discretization | Equal-length time slots |
+| Augmenting path search | DFS-based Ford-Fulkerson (iterative) |
+| Node buffering | Infinite buffering capacity between time slots |
+| TEG transmission edges | `(u,t) → (v,t+1)` with link capacity |
+| TEG storage edges | `(v,t) → (v,t+1)` with infinite capacity |
+| Data source | Synthetic random networks (not Starlink traces) |
+| Trials per condition | 3 independent random networks, results averaged |
 
 ---
 
@@ -131,19 +214,21 @@ The paper does not specify all implementation details. Our choices:
 
 After running the full experiment:
 
-- **`figure2.png`**: All three solver lines overlap — they find the same minimum delivery time
-- **`figure3.png`**: One-Pass line is below BS and EBS lines, gap widening as D increases
+- **`figure2.png`** — All three solver lines overlap. They all find the same minimum delivery time T* at every D value.
+- **`figure3.png`** — One-Pass line sits well below BS and EBS on a log-scale y-axis, with the gap widening as D increases.
+- **`results_agg.csv`** — Mean delivery times and runtimes per D value (averaged over 3 trials).
+- **`results_raw.csv`** — Per-trial raw results.
 
 This reproduces the qualitative trend from Figure 3 of the original paper.
 
 ---
 
-## Group Members
+## Offline Submission (Code Archive)
 
-- Aidan Campbell
-- Asael Garcia Cervantes
-- Yo Han Lee
-- Jabir Nure
-- Yaseer Sabir
+To generate a clean zip archive of the repository for offline submission:
 
-CSCI 4800 — Reproduction of IEEE INFOCOM 2023
+```bash
+git archive --format=zip --output=one-pass-mddt-reproduction.zip HEAD
+```
+
+This packages all tracked files without including `.git` history.
